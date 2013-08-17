@@ -2,7 +2,9 @@
   :description "Simple remote control for alsaplayer"
   :url "http://example.com/FIXME"
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [compojure "1.1.5"]]
+                 [org/jaudiotagger "2.0.3"]
+                 [compojure "1.1.5"]
+                 [ring/ring-json "0.2.0"]]
   :plugins [[lein-ring "0.8.5"]]
   :ring {:handler ngale.handler/app}
   :profiles
