@@ -8,8 +8,8 @@
 
 ;; root directory for songs
 ;(def root (jio/file "./content/mp3"))
-;(def root (jio/file "./content/mp3-5pc"))
-(def root (jio/file "/home/mattias/mp3"))
+(def root (jio/file "./content/mp3-5pc"))
+;(def root (jio/file "/home/mattias/mp3"))
 
 (def extensions #{".mpeg" ".mp3" ".mp4" ".flac" ".ogg" ".aiff" ".wma"})
 

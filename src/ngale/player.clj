@@ -23,12 +23,11 @@
 
   The value is a map that will be merged with the current state."
   [name [state-binding] args val]
-  (let [state (gensym)]
-    `(defn ~name ~args
-      (send player
-            (fn [~state]
-              (let [~state-binding ~state]
-                (merge ~state ~val)))))))
+  `(defn ~name ~args
+    (send player
+          (fn [state#]
+            (let [~state-binding state#]
+              (merge state# ~val))))))
 
 (def-action completed
   [{:keys [tracks pos]}] []
@@ -85,7 +84,7 @@
 (defn alsa
   "Run alsaplayer with arguments."
   [& args]
-  (let [result (apply sh (concat ["alsaplayer"] (map #'str args)))]
+  (let [result (apply sh (concat ["alsaplayer" "-i" "text"] (map #'str args)))]
     (= 0 (:exit result))))
 
 (defn alsa-pause [] (alsa "--speed" "0"))
@@ -110,7 +109,7 @@
   ;(println "playing" track)
   (future
     (println "playing" path)
-    (when (and (.exists? (jio/file path)) (alsa path))
+    (when (and (.exists (jio/file path)) (alsa path))
       (println "done" path)
       (completed))))
 
