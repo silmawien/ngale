@@ -31,7 +31,7 @@
 (def supported-tags (fields FieldKey TITLE ALBUM ARTIST COMMENT GENRE YEAR))
 
 ;; permanently disable INFO logs
-(.. Logger (getLogger "org.jaudiotagger") (setLevel Level/WARNING))
+(.. Logger (getLogger "org.jaudiotagger") (setLevel Level/SEVERE))
 
 (defn tags [file]
   (try
@@ -81,4 +81,11 @@
   [songs q]
   (let [qwords (str/split (str/lower-case q) #" +")]
     (into {} (filter #(matches qwords %) songs))))
+
+(defn add-meta
+  "Add metadata to collection. Indexing coll by k is expected
+  to yield a path, which is used to look up the song."
+  [coll k]
+  (let [ss @songs]
+    (map #(merge %1 (get ss (k %1))) coll)))
 

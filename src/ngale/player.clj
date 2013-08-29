@@ -1,11 +1,12 @@
 (ns ngale.player
-  (:require [clojure.string :refer [split]])
-  (:require [clojure.java.io :as jio])
-  (:require [clojure.java.shell :refer [sh]]))
+  (:require [clojure.string :refer [split]]
+            [clojure.java.io :as jio]
+            [clojure.java.shell :refer [sh]]
+            [ngale.util :refer [add-watch-once]]))
 
 ;; start playback on enqueue if the playlist was empty
 (def auto-play true)
-(def auto-repeat true)
+(def auto-repeat false)
 
 ;; play list state
 (def default-state {
@@ -108,9 +109,9 @@
   [path]
   ;(println "playing" track)
   (future
-    (println "playing" path)
+    ;(println "playing" path)
     (when (and (.exists (jio/file path)) (alsa path))
-      (println "done" path)
+      ;(println "done" path)
       (completed))))
 
 (defn current-track
@@ -134,6 +135,5 @@
       (if (:playing? new)
         (alsa-play (:path (current-track new)))))))
 
-(remove-watch player :on-update)
-(add-watch player :on-update #'on-update)
+(add-watch-once player :player #'on-update)
 

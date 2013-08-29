@@ -1,0 +1,9 @@
+body {
+    background-image: url('bg.jpg');
+    background-size: cover;
+    color: #e0e0e0;
+}
+html, body {
+    min-height: 80%;
+}
+
