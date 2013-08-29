@@ -1,13 +1,15 @@
 (ns ngale.repl
-  (:require [org.httpkit.server :refer [run-server]])
-  (:require [ngale.handler :as handler]))
+  (:require [org.httpkit.server :refer [run-server]]
+            [ngale.server :as server]))
 
 (defn reload
   []
   (println "Reloading ngale namespaces ...")
   (require '[ngale.songs :as songs] :reload)
   (require '[ngale.player :as player] :reload)
-  (require '[ngale.handler :as handler] :reload))
+  (require '[ngale.util :as util] :reload)
+  (require '[ngale.app :as app] :reload)
+  (require '[ngale.server :as server] :reload))
 
 (defonce server nil)
 
@@ -21,5 +23,5 @@
   []
   (unserve)
   (println "starting ...")
-  (alter-var-root #'server (fn [v] (run-server handler/dev-app {:port 3000}))))
+  (alter-var-root #'server (fn [v] (run-server server/dev-app {:port 3000}))))
 

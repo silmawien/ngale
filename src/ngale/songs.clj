@@ -1,26 +1,17 @@
 (ns ngale.songs
-  (:require [clojure.java.io :as jio])
   (:import [org.jaudiotagger.audio AudioFileIO])
   (:import [org.jaudiotagger.audio.exceptions CannotReadException])
   (:import [org.jaudiotagger.tag FieldKey])
   (:import [java.util.logging Logger Level])
   (:require [clojure.string :as str]))
 
-;; root directory for songs
-;(def root (jio/file "./content/mp3"))
-(def root (jio/file "./content/mp3-5pc"))
-;(def root (jio/file "/home/mattias/mp3"))
-
 (def extensions #{".mpeg" ".mp3" ".mp4" ".flac" ".ogg" ".aiff" ".wma"})
-
-;; list of all songs
-(defonce songs (agent {}))
 
 (defn is-audio? [file]
   (let [name (.getName file)]
     (some #(.endsWith name %) extensions)))
 
-(defn list-audio-files []
+(defn list-audio-files [root]
   (filter #'is-audio? (file-seq root)))
 
 (defmacro fields [cls & names]
@@ -61,12 +52,12 @@
     [path (or (cur path)
               (add-index path (tags file)))]))
 
-(defn load-songs [cur]
+(defn load-songs [cur root]
   (println "loading ...")
-  (into {} (map (partial make-song cur) (list-audio-files))))
+  (into {} (map (partial make-song cur) (list-audio-files root))))
 
-(defn update-songs []
-  (send songs (fn [cur] (load-songs cur))))
+(defn update-songs [songs root]
+  (send songs (fn [cur] (load-songs cur root))))
 
 (defn matches
   [words song]
@@ -81,11 +72,4 @@
   [songs q]
   (let [qwords (str/split (str/lower-case q) #" +")]
     (into {} (filter #(matches qwords %) songs))))
-
-(defn add-meta
-  "Add metadata to collection. Indexing coll by k is expected
-  to yield a path, which is used to look up the song."
-  [coll k]
-  (let [ss @songs]
-    (map #(merge %1 (get ss (k %1))) coll)))
 
