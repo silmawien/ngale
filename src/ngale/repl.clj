@@ -9,6 +9,7 @@
   (require '[ngale.player :as player] :reload)
   (require '[ngale.util :as util] :reload)
   (require '[ngale.app :as app] :reload)
+  (use '[ngale.cmdline] :reload)
   (require '[ngale.server :as server] :reload))
 
 (defonce server nil)

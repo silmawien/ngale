@@ -30,7 +30,9 @@
   to yield a path, which is used to look up the song."
   [coll k]
   (let [ss @songs]
-    (map #(merge %1 (get ss (k %1))) coll)))
+    (map #(merge %1 (dissoc (get ss (k %1)) :idx)) coll)))
+
+(defn rescan [] (songs/update-songs songs root))
 
 ;;; top-level interface
 (defn playlist [] (update-in @playstate [:tracks] add-meta :path))

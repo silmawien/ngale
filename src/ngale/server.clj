@@ -38,17 +38,21 @@
   (GET "/playlist" [] {:body (app/playlist)})
   (GET "/q/:q" [q] {:body (app/query q)})
   (GET "/async" [] sse-handler)
-  (GET "/control/pause" [] (app/pause))
-  (GET "/control/resume" [] (app/resume))
-  (GET "/control/clear" [] (app/clear))
-  (GET "/control/next" [] (app/next-track))
-  (GET "/control/previous" [] (app/previous-track))
-  (GET "/control/enqueue/:path" [path] (app/enqueue path))
+  (GET "/pause" [] (app/pause))
+  (GET "/resume" [] (app/resume))
+  (GET "/clear" [] (app/clear))
+  (GET "/next" [] (app/next-track))
+  (GET "/previous" [] (app/previous-track))
+  (POST "/enqueue" [:as {body :body}]
+        (doseq [path (if (coll? body) body [body])]
+          (app/enqueue path))
+        "")
   (route/resources "/")
   (route/not-found "Not Found"))
 
 (def core-app
   (-> (handler/site #'app-routes)
+      (json/wrap-json-body {:keywords? true})
       (json/wrap-json-response {:pretty true})))
 
 (def dev-app

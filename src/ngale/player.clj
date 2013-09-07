@@ -26,12 +26,16 @@
 
 (def-action completed
   [{:keys [tracks pos]}]
-    {:pos (mod (inc pos) (count tracks))
-     :playing? (or (not= (inc pos) (count tracks)) auto-repeat)})
+  {:pos (mod (inc pos) (count tracks))
+   :playing? (or (not= (inc pos) (count tracks)) auto-repeat)})
+
+(def-action error
+  [state]
+  {:playing? false})
 
 (def-action next-track
   [{:keys [tracks pos]}]
-    {:pos (min (dec (count tracks)) (inc pos))})
+  {:pos (min (dec (count tracks)) (inc pos))})
 
 (def-action previous-track
   [{:keys [pos]}]
@@ -62,6 +66,10 @@
 
 ;;; interface to alsa (running in a separate process)
 
+;; used to determine if an alsa command was interrupted by alsa-kill,
+;; or died spontaneously
+(defonce alsa-kill-counter (atom 0))
+
 (defn- keyword-pairs
   [output]
     (let [lines (filter #(re-find #": " %) (split output #"\n"))]
@@ -77,21 +85,31 @@
                     [(keyword k) v])))))
 
 (defn alsa
-  "Run alsaplayer with arguments."
+  "Run alsaplayer with arguments. Returns :killed if stopped by
+  alsa-kill, :done if finished with a 0 exit status, and :error otherwise."
   [& args]
-  (let [result (apply sh (concat ["alsaplayer" "-i" "text"] (map #'str args)))]
-    (= 0 (:exit result))))
+  (let [limit @alsa-kill-counter
+        result (apply sh (concat ["alsaplayer" "-i" "text"] (map #'str args)))]
+    ;(println (str args) (:exit result))
+    (cond
+      (> @alsa-kill-counter limit) :killed
+      (= 0 (:exit result)) :done
+      :else :error)))
 
 (defn alsa-pause [] (alsa "--speed" "0"))
 (defn alsa-resume [] (alsa "--speed" "1.0"))
 (defn alsa-seek [sec] (alsa "--seek" sec))
 
 (defn alsa-kill
-  "Kill alsaplayer in a way such that it returns a non-zero exit status.
-  This way alsa-play can distinguish being killed from song finishing. Kind of
-  crude."
+  "Kill any ongoing alsa-play command in such a way that it returns :killed."
   []
+  (swap! alsa-kill-counter #(inc %1))
   (sh "killall" "alsaplayer"))
+
+(defn alsa-error
+  [reference path msg]
+  (prn msg path)
+  (error reference))
 
 (defn alsa-play
   "Start alsaplayer for a given track. The built in playlist features are not
@@ -101,12 +119,17 @@
   TODO: (completed) events can be handled out-of-order. This is by design, but
   it might be nice to discard them if the current track has changed."
   [reference path]
-  ;(println "playing" track)
+  ;(println "playing" path)
   (future
     ;(println "playing" path)
-    (when (and (.exists (jio/file path)) (alsa path))
-      ;(println "done" path)
-      (completed reference))))
+    (if (and path (.exists (jio/file path)))
+      (let [result (alsa path)]
+        ;(println "completed" result)
+        (case result
+          :done (completed reference)
+          :killed nil
+          :error (alsa-error reference path "playback error")))
+      (alsa-error reference path "not found"))))
 
 (defn current-track
   [p]
