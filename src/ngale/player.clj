@@ -117,7 +117,10 @@
   we signal this by calling (completed).
 
   TODO: (completed) events can be handled out-of-order. This is by design, but
-  it might be nice to discard them if the current track has changed."
+  it might be nice to discard them if the current track has changed.
+
+  TODO: there is a small delay between returning and when alsa-player starts
+  responding to commands. This can lead to races."
   [reference path]
   (future
     ;(println "playing" path)
@@ -142,10 +145,12 @@
   [key reference old new]
   (if (= (current-track old) (current-track new))
     ; same track
-    (if-not (:playing? new)
-      (alsa-pause)
-      (if-not (= :done (alsa-resume))
-        (alsa-play reference (:path (current-track new)))))
+    (if-not (= (:playing? old) (:playing? new))
+      (if-not (:playing? new)
+        (alsa-pause)
+        (when-not (= :done (alsa-resume))
+          (alsa-kill)
+          (alsa-play reference (:path (current-track new))))))
     ; different track
     (do
       (alsa-kill)
