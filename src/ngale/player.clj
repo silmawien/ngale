@@ -119,7 +119,6 @@
   TODO: (completed) events can be handled out-of-order. This is by design, but
   it might be nice to discard them if the current track has changed."
   [reference path]
-  ;(println "playing" path)
   (future
     ;(println "playing" path)
     (if (and path (.exists (jio/file path)))
@@ -145,7 +144,8 @@
     ; same track
     (if-not (:playing? new)
       (alsa-pause)
-      (or (alsa-resume) (alsa-play reference (:path (current-track new)))))
+      (if-not (= :done (alsa-resume))
+        (alsa-play reference (:path (current-track new)))))
     ; different track
     (do
       (alsa-kill)
