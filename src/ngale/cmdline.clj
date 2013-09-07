@@ -3,57 +3,73 @@
             [clojure.java.io :as jio]
             [clojure.zip :as zip]))
 
-;;; stateful cmdline interface
+;;; abstract cmdline list interface
 
-;; latest search results as a vector, with cursor position
-(def search-state (atom [0 []]))
+;; refers to the result set atom that #'more will act on
+(def result-set (atom {:pos 0 :values [] :fmt nil}))
 
 (def page-size 10)
 
-(defn slice-with-index
+(defn- slice-with-index
   [v start end]
   (map vector (range start end)
        (subvec v start (min (count v) end))))
 
-(defn format-result
-  [index result]
-  (let [path (first result)
-        fname (.getName (jio/file path))
-        {:keys [title album artist]} (second result)]
-    (if-not (nil? title)
-      (str index ": " title " / " artist " / " album)
-      (str index ": " fname))))
+(defn- print-page
+  [{:keys [pos values fmt]}]
+  (doseq [[i row] (slice-with-index values pos (+ pos page-size))]
+    (println i ":" (fmt row)))
+  (count values))
 
-(defn print-results
-  []
-  (let [[pos results] @search-state
-        end (+ pos page-size)]
-    (doseq [[n result] (slice-with-index results pos end)]
-      (println (format-result n result)))
-    (count results)))
+(defn- next-page [n v] (min (+ n page-size) (count v)))
 
-(defn query
-  [q]
-  (swap! search-state
-         (fn [s]
-            [0 (vec (app/query q))]))
-  (print-results))
-
-(defn next-page [n v] (min (+ n page-size) (count v)))
+(defn- pgdn
+  "Page down in a result set, printing the new page."
+  [{:keys [pos values fmt] :as state}]
+  (let [newpos (next-page pos values)
+        result (assoc state :pos newpos)]
+    result))
 
 (defn more
+  "Display more of the active result set."
   []
-  (swap! search-state
-         (fn [s]
-           (let [v (second s)
-                 n (next-page (first s) v)]
-             [n v])))
-  (print-results))
+  (print-page (swap! result-set pgdn)))
+
+(defn- format-track
+  [{:keys [path title artist album]}]
+  (if-not (nil? title)
+    (str title " / " artist " / " album)
+    (.getName (jio/file path))))
+
+;;; concrete list commands
+
+;; search
+(def search-results (atom []))
+
+(defn query
+  "Search songs."
+  [q]
+  (swap! search-results (fn [x] (vec (app/query q))))
+  (print-page
+    (swap! result-set
+           (fn [s]
+             {:pos 0 :values @search-results :fmt format-track}))))
 
 (defn enqueue
-  [& abbr]
-  (let [specs (map #(if (vector? %) % [% (inc %)]) abbr)
-        indices (mapcat (partial apply range) specs)
-        state @search-state]
+  "Enqueues from search-results."
+  [& specs]
+  (let [indices (mapcat #(if (vector? %) (apply range %) [%]) specs)
+        hits @search-results]
     (doseq [i indices]
-      (app/enqueue (first ((second state) i))))))
+      (app/enqueue (:path (hits i))))))
+
+;; player state
+(defn ps
+  "Display player state."
+  []
+  (print-page
+    (let [{:keys [tracks pos playing]} (app/playlist)]
+      (swap! result-set
+             (fn [s]
+               {:pos pos :values (vec tracks) :fmt format-track})))))
+

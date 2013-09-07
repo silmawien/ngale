@@ -71,5 +71,6 @@
   path and meta data. Matching is case-insensitive."
   [songs q]
   (let [qwords (str/split (str/lower-case q) #" +")]
-    (into {} (filter #(matches qwords %) songs))))
+    (map (fn [[path info]] (dissoc (assoc info :path path) :idx))
+         (filter #(matches qwords %) songs))))
 
