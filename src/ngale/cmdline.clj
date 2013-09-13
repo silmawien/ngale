@@ -71,5 +71,5 @@
     (let [{:keys [tracks pos playing]} (app/playlist)]
       (swap! result-set
              (fn [s]
-               {:pos pos :values (vec tracks) :fmt format-track})))))
+               {:pos (max 0 pos) :values (vec tracks) :fmt format-track})))))
 

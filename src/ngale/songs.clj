@@ -54,7 +54,7 @@
 
 (defn load-songs [cur root]
   (println "loading ...")
-  (into {} (map (partial make-song cur) (list-audio-files root))))
+  (time (into {} (map (partial make-song cur) (list-audio-files root)))))
 
 (defn update-songs [songs root]
   (send songs (fn [cur] (load-songs cur root))))
