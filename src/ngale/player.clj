@@ -10,13 +10,13 @@
 ;; play list state
 (def default-state {
      :tracks [],
-     :pos -1,
+     :pos 0,
      :playing? false
      :idseq 0})
 
 (defmacro def-action
   "Defines a function that alters player state. 
-  The resulting val is a map that will be merged with the current state."
+  The result should be a map. It will be merged with the current state."
   [name args val]
   `(defn ~name [player# ~@(rest args)]
     (send player#
@@ -24,27 +24,33 @@
             (let [~(first args) state#]
               (merge state# ~val))))))
 
-(def-action completed
-  [{:keys [tracks pos]}]
-  {:pos (mod (inc pos) (count tracks))
-   :playing? (or (not= (inc pos) (count tracks)) auto-repeat)})
-
 (def-action error
   [state]
   {:playing? false})
 
-(def-action next-track
-  [{:keys [tracks pos]}]
-  {:pos (min (dec (count tracks)) (inc pos))})
+(defn clip-pos [pos n] (mod pos (inc n)))
+(defn playable-pos [pos n] (< pos n))
 
-(def-action previous-track
-  [{:keys [pos]}]
-  {:pos (if (= -1 pos) -1 (max 0 (dec pos)))})
+(defn alter-pos
+  [{:keys [tracks pos playing?]} f]
+  (let [n (count tracks)
+        new-pos (clip-pos (f pos) n)]
+    {:pos new-pos
+     :playing? (and playing? (playable-pos new-pos n))}))
+
+(def-action goto [s target] (alter-pos s (constantly target)))
+(def-action next-track [s] (alter-pos s inc))
+(def-action previous-track [s] (alter-pos s dec))
+(def-action completed
+  [{:keys [tracks pos] :as s}]
+  (let [n (count tracks)]
+    (alter-pos s (if (and auto-repeat (= (inc pos) n))
+                   (constantly 0)
+                   inc))))
 
 (def-action enqueue
   [{:keys [tracks pos playing? idseq]} path]
-  {:pos (if (empty? tracks) 0 pos)
-   :tracks (conj tracks (hash-map :path path :id idseq))
+  {:tracks (conj tracks (hash-map :path path :id idseq))
    :playing? (if (empty? tracks) auto-play playing?)
    :idseq (inc idseq)})
 
@@ -53,8 +59,8 @@
   {:playing? false})
 
 (def-action resume
-  [p]
-  {:playing? true})
+  [{:keys [pos tracks]}]
+  {:playing? (playable-pos pos (count tracks))})
 
 (defn clear
   [player]
@@ -135,7 +141,7 @@
 
 (defn current-track
   [p]
-  (if-not (= -1 (:pos p))
+  (if-not (>= (:pos p) (count (:tracks p)))
     (nth (:tracks p) (:pos p))))
 
 ;;; watch and control alsaplayer based on changes to @player

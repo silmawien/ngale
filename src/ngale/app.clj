@@ -38,6 +38,7 @@
 (defn resume [] (player/resume playstate))
 (defn next-track [] (player/next-track playstate))
 (defn previous-track [] (player/previous-track playstate))
+(defn goto [pos] (player/goto playstate pos))
 (defn clear [] (player/clear playstate))
 (defn enqueue [path] (player/enqueue playstate path))
 (defn query [q] (songs/query @songs q))
