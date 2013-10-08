@@ -19,7 +19,8 @@
   (let [fs (map (fn [name] `(. ~cls ~name)) names)]
     `(list ~@fs)))
 
-(def supported-tags (fields FieldKey TITLE ALBUM ARTIST COMMENT GENRE YEAR))
+(def supported-tags
+  (fields FieldKey TITLE ALBUM ARTIST COMMENT GENRE YEAR TRACK))
 
 ;; permanently disable INFO logs
 (.. Logger (getLogger "org.jaudiotagger") (setLevel Level/SEVERE))
@@ -52,9 +53,24 @@
     [path (or (cur path)
               (add-index path (tags file)))]))
 
+(defn track-cmp
+  "Sort by directory name, track #, full path."
+  [ka va kb vb]
+  (let [kfn (juxt
+              (fn [path song] (-> path clojure.java.io/file .getParent))
+              (fn [path song] (try (-> song :track Long/parseLong)
+                                   (catch NumberFormatException e nil)))
+              (fn [path song] path))]
+    (compare (kfn ka va) (kfn kb vb))))
+
+(defn track-sort
+  [m]
+  (into (sorted-map-by #(track-cmp %1 (get m %1) %2 (get m %2))) m))
+
 (defn load-songs [cur root]
   (println "loading ...")
-  (time (into {} (map (partial make-song cur) (list-audio-files root)))))
+  (time (track-sort
+          (into {} (map (partial make-song cur) (list-audio-files root))))))
 
 (defn update-songs [songs root]
   (send songs (fn [cur] (load-songs cur root))))

@@ -30,7 +30,7 @@
   (let [ss @songs]
     (map #(merge %1 (dissoc (get ss (k %1)) :idx)) coll)))
 
-(defn rescan [] (songs/update-songs songs root))
+(defn rescan [] (songs/update-songs songs root) nil)
 
 ;;; top-level interface
 (defn playlist [] (update-in @playstate [:tracks] add-meta :path))
