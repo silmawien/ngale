@@ -3,6 +3,16 @@
             [clojure.java.io :as jio]
             [clojure.zip :as zip]))
 
+;;;; daemon mode test
+;;(defn foo
+;;  []
+;;  (let [proc (.exec (Runtime/getRuntime) (into-array ["cat", "fifo"]))
+;;        stdout (.getInputStream proc)
+;;        br (java.io.BufferedReader. (java.io.InputStreamReader. stdout))]
+;;    (println (.readLine br))
+;;    (.waitFor proc)
+;;    (.close br)))
+
 ;;; abstract cmdline list interface
 
 ;; refers to the result set atom that #'more will act on

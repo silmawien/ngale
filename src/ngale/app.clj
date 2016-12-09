@@ -7,7 +7,7 @@
 ;;; app - where state roams free!
 
 ;; root directory for songs
-(def root (jio/file "./content/mp3"))
+(def root (jio/file "./content/mp3-5pc"))
 
 ;; list of all songs
 (defonce songs (agent {}))

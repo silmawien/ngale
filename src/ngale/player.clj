@@ -125,8 +125,8 @@
   TODO: (completed) events can be handled out-of-order. This is by design, but
   it might be nice to discard them if the current track has changed.
 
-  TODO: there is a small delay between returning and when alsa-player starts
-  responding to commands. This can lead to races."
+  TODO: There is a small delay between returning and when alsa-player starts
+  responding to commands. This can lead to races. Use daemon mode?"
   [reference path]
   (future
     ;(println "playing" path)
@@ -145,7 +145,6 @@
     (nth (:tracks p) (:pos p))))
 
 ;;; watch and control alsaplayer based on changes to @player
-
 (defn on-update
   "Diff the two states and bring the player up to date."
   [key reference old new]
